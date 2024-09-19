@@ -192,6 +192,24 @@ class PostRenderEscape {
   }
 }
 
+/**
+ * Prepare front-matter data
+ *
+ * @param data
+ * @param jsonMode
+ * @returns
+ * @example
+ *
+ *
+ * const data = {
+ *  title: 'Hello World',
+ * date: new Date(),
+ * layout: 'post',
+ * content: 'Hello World'
+ * }
+ *
+ * prepareFrontMatter(data, false)
+ */
 const prepareFrontMatter = (data: any, jsonMode: boolean) => {
   for (const [key, item] of Object.entries(data)) {
     if (moment.isMoment(item)) {
