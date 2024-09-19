@@ -31,6 +31,16 @@ interface NewArgs {
   [key: string]: any
 }
 
+/**
+ * Create a new post or page.
+ *
+ * This function creates a new post or page based on the arguments provided, such as layout, path, and title.
+ * It will display a help message if insufficient arguments are provided.
+ *
+ * @param this The current Hexo instance.
+ * @param args The arguments for creating a new post, including layout, path, and title.
+ *
+ */
 function newConsole(this: Hexo, args: NewArgs) {
   const path = args.p || args.path;
   let title: string;
