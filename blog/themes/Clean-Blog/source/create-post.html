@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Nuevo Post</title>
+</head>
+<body>
+    <h1>Crear Nuevo Post</h1>
+    <form id="create-post-form">
+        <input type="text" id="post-title" placeholder="Título del Post" required />
+        <button type="submit">Crear Nuevo Post</button>
+    </form>
+    <p id="response-message"></p>
+
+    <script>
+        document.getElementById('create-post-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const postTitle = document.getElementById('post-title').value;
+            try {
+                const response = await fetch('http://localhost:3000/create-post', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title: postTitle })
+                });
+
+                const message = await response.text();
+                document.getElementById('response-message').textContent = message;
+            } catch (error) {
+                console.error('Error al crear el post:', error);
+                document.getElementById('response-message').textContent = 'Error al crear el post.';
+            }
+        });
+    </script>
+</body>
+</html>
