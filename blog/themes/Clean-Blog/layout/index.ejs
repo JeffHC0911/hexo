@@ -20,6 +20,20 @@
 <!-- Main Content -->
 <div class="container">
   <!--Formulario de creación-->
+  <div class="form">
+    <h2>Crear Nuevo Post</h2>
+    <form id="create-post-form">
+      <input
+        class="input-blog"
+        type="text"
+        id="post-title"
+        placeholder="Título del Post"
+        required
+      />
+      <button class="btn-blog" type="submit">Crear Nuevo Post</button>
+    </form>
+    <p id="response-message"></p>
+  </div>
 
   <div class="row">
     <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
@@ -29,3 +43,57 @@
     </div>
   </div>
 </div>
+
+<style>
+  .form {
+    margin-top: 50px;
+    text-align: center;
+  }
+
+  .input-blog {
+    width: 50%;
+    padding: 10px;
+    margin: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+
+  .btn-blog {
+    padding: 10px 20px;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  document
+    .getElementById("create-post-form")
+    .addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const postTitle = document.getElementById("post-title").value;
+      try {
+        const response = await fetch("http://localhost:3000/create-post", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ title: postTitle }),
+        });
+
+        const message = await response.text();
+        document.getElementById("response-message").textContent = message;
+
+        // Recargar la página después de un tiempo para mostrar los cambios
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000); // Recarga la página después de 1 segundo
+      } catch (error) {
+        console.error("Error al crear el post:", error);
+        document.getElementById("response-message").textContent =
+          "Error al crear el post.";
+      }
+    });
+</script>
