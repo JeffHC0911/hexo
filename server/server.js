@@ -13,6 +13,12 @@ app.use(cors());
 // Middleware para parsear JSON
 app.use(express.json());
 
+// Función para sanitizar el título del post
+const sanitizeTitle = title => {
+  // Permite solo letras, números, guiones y guiones bajos
+  return title.replace(/[^a-zA-Z0-9_-]/g, '');
+};
+
 // Ruta raíz para confirmar que el servidor está funcionando
 app.get('/', (req, res) => {
   res.send('Servidor Hexo en funcionamiento');
@@ -20,10 +26,14 @@ app.get('/', (req, res) => {
 
 // Endpoint para crear un nuevo post
 app.post('/create-post', (req, res) => {
-  const postTitle = req.body.title;
+  let postTitle = req.body.title;
+
   if (!postTitle) {
     return res.status(400).send('El título del post es necesario.');
   }
+
+  // Sanitizar el título del post
+  postTitle = sanitizeTitle(postTitle);
 
   // Ejecuta el comando 'hexo new'
   exec(`hexo new "${postTitle}"`, { cwd: path.resolve(__dirname, '../blog') }, (error, stdout, stderr) => {
