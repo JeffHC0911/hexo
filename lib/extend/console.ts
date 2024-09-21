@@ -70,37 +70,15 @@ class Console {
   register(name: string, desc: string | Option | AnyFn, options?: Option | AnyFn, fn?: AnyFn): void {
     if (!name) throw new TypeError('name is required');
 
+    // Early return para simplificar la asignación de fn
     if (!fn) {
-      if (options) {
-        if (typeof options === 'function') {
-          fn = options;
-
-          if (typeof desc === 'object') { // name, options, fn
-            options = desc;
-            desc = '';
-          } else { // name, desc, fn
-            options = {};
-          }
-        } else {
-          throw new TypeError('fn must be a function');
-        }
-      } else {
-        // name, fn
-        if (typeof desc === 'function') {
-          fn = desc;
-          options = {};
-          desc = '';
-        } else {
-          throw new TypeError('fn must be a function');
-        }
-      }
+      fn = this.resolveFn(desc, options);
+      desc = typeof desc === 'object' ? '' : desc;
+      options = typeof desc === 'object' ? desc : options || {};
     }
 
-    if (fn.length > 1) {
-      fn = Promise.promisify(fn);
-    } else {
-      fn = Promise.method(fn);
-    }
+    // Promisificar función según su longitud
+    fn = fn.length > 1 ? Promise.promisify(fn) : Promise.method(fn);
 
     const c = fn as StoreFunction;
     this.store[name.toLowerCase()] = c;
@@ -108,6 +86,19 @@ class Console {
     c.desc = desc as string;
 
     this.alias = abbrev(Object.keys(this.store));
+  }
+
+  private resolveFn(desc: string | Option | AnyFn, options?: Option | AnyFn): AnyFn {
+    // Resuelve las combinaciones de fn y options
+    if (options && typeof options === 'function') {
+      return options; // name, options, fn
+    }
+
+    if (typeof desc === 'function') {
+      return desc; // name, desc, fn
+    }
+
+    throw new TypeError('fn must be a function');
   }
 }
 
