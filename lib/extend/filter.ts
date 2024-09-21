@@ -69,7 +69,7 @@ class Filter {
     type = typeAlias[type] || type;
 
     const list = this.list(type);
-    if (!list || !list.length) return;
+    if (!list?.length) return;
 
     const index = list.indexOf(fn);
 
