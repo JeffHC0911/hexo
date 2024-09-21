@@ -1,25 +1,20 @@
-// server.js
 const express = require('express');
-const cors = require('cors'); // Importar cors
-const { exec } = require('child_process');
+const cors = require('cors');
 const path = require('path');
+const Hexo = require('hexo');
 
 const app = express();
 const PORT = 3000;
 
-// Usar cors para permitir todas las solicitudes de cualquier origen
 app.use(cors());
-
-// Middleware para parsear JSON
 app.use(express.json());
 
 // Función para sanitizar el título del post
 const sanitizeTitle = title => {
-  // Permite solo letras, números, guiones y guiones bajos
   return title.replace(/[^a-zA-Z0-9_-]/g, '');
 };
 
-// Ruta raíz para confirmar que el servidor está funcionando
+// Ruta de prueba para verificar el servidor
 app.get('/', (req, res) => {
   res.send('Servidor Hexo en funcionamiento');
 });
@@ -32,21 +27,25 @@ app.post('/create-post', (req, res) => {
     return res.status(400).send('El título del post es necesario.');
   }
 
-  // Sanitizar el título del post
   postTitle = sanitizeTitle(postTitle);
 
-  // Ejecuta el comando 'hexo new'
-  exec(`hexo new "${postTitle}"`, { cwd: path.resolve(__dirname, '../blog') }, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error al crear el post: ${error.message}`);
-      return res.status(500).send('Error al crear el post.');
-    }
-    if (stderr) {
-      console.error(`Error: ${stderr}`);
-      return res.status(500).send('Error al crear el post.');
-    }
-    console.log(`Resultado: ${stdout}`);
+  if (postTitle.length > 100) {
+    return res.status(400).send('El título es demasiado largo.');
+  }
+
+  const hexo = new Hexo(path.resolve(__dirname, '../blog'), {
+    silent: false
+  });
+
+  hexo.init().then(() => {
+    return hexo.call('new', {_: ['post', postTitle]});
+  }).then(() => {
     res.send('Post creado exitosamente.');
+  }).catch(err => {
+    console.error(err);
+    res.status(500).send('Error al crear el post: ' + err.message);
+  }).finally(() => {
+    hexo.exit();
   });
 });
 
