@@ -10,67 +10,71 @@ export = (ctx: Hexo) => function multiConfigPath(base: string, configPaths?: str
 
   if (!configPaths) {
     log.w('No config file entered.');
-    return join(base, '_config.yml');
-  }
-
-  let paths: string[];
-  // determine if comma or space separated
-  if (configPaths.includes(',')) {
-    paths = configPaths.replace(' ', '').split(',');
-  } else {
-    // only one config
-    let configPath = isAbsolute(configPaths) ? configPaths : resolve(base, configPaths);
-
-    if (!existsSync(configPath)) {
-      log.w(`Config file ${configPaths} not found, using default.`);
-      configPath = defaultPath;
-    }
-
-    return configPath;
-  }
-
-  const numPaths = paths.length;
-
-  // combine files
-  let combinedConfig = {};
-  let count = 0;
-  for (let i = 0; i < numPaths; i++) {
-    const configPath = isAbsolute(paths[i]) ? paths[i] : join(base, paths[i]);
-
-    if (!existsSync(configPath)) {
-      log.w(`Config file ${paths[i]} not found.`);
-      continue;
-    }
-
-    // files read synchronously to ensure proper overwrite order
-    const file = readFileSync(configPath);
-    const ext = extname(paths[i]).toLowerCase();
-
-    if (ext === '.yml') {
-      combinedConfig = deepMerge(combinedConfig, yml.load(file));
-      count++;
-    } else if (ext === '.json') {
-      combinedConfig = deepMerge(combinedConfig, yml.load(file, {json: true}));
-      count++;
-    } else {
-      log.w(`Config file ${paths[i]} not supported type.`);
-    }
-  }
-
-  if (count === 0) {
-    log.e('No config files found. Using _config.yml.');
     return defaultPath;
   }
 
-  log.i('Config based on', count.toString(), 'files');
+  const paths = parseConfigPaths(configPaths, base);
 
-  const multiconfigRoot = outputDir || base;
-  const outputPath = join(multiconfigRoot, '_multiconfig.yml');
+  if (paths.length === 1) {
+    return handleSingleConfigPath(paths[0], defaultPath, log);
+  }
 
-  log.d(`Writing _multiconfig.yml to ${outputPath}`);
-
-  writeFileSync(outputPath, yml.dump(combinedConfig));
-
-  // write file and return path
-  return outputPath;
+  return handleMultipleConfigPaths(paths, base, outputDir, log);
 };
+
+function parseConfigPaths(configPaths: string, base: string): string[] {
+  if (configPaths.includes(',')) {
+    return configPaths.split(',').map(path => path.trim());
+  }
+  return [isAbsolute(configPaths) ? configPaths : resolve(base, configPaths)];
+}
+
+function handleSingleConfigPath(path: string, defaultPath: string, log: any): string {
+  if (!existsSync(path)) {
+    log.w(`Config file ${path} not found, using default.`);
+    return defaultPath;
+  }
+  return path;
+}
+
+function handleMultipleConfigPaths(paths: string[], base: string, outputDir: string | undefined, log: any): string {
+  const combinedConfig = combineConfigs(paths, base, log);
+  if (!combinedConfig.count) {
+    log.e('No config files found. Using _config.yml.');
+    return join(base, '_config.yml');
+  }
+
+  log.i('Config based on', combinedConfig.count.toString(), 'files');
+  const outputPath = join(outputDir || base, '_multiconfig.yml');
+  log.d(`Writing _multiconfig.yml to ${outputPath}`);
+  writeFileSync(outputPath, yml.dump(combinedConfig.config));
+  return outputPath;
+}
+
+function combineConfigs(paths: string[], base: string, log: any): { config: any; count: number } {
+  let combinedConfig = {};
+  let count = 0;
+
+  paths.forEach(path => {
+    const configPath = isAbsolute(path) ? path : join(base, path);
+    if (!existsSync(configPath)) {
+      log.w(`Config file ${path} not found.`);
+      return;
+    }
+
+    const file = readFileSync(configPath);
+    const ext = extname(path).toLowerCase();
+
+    if (ext === '.yml' || ext === '.yaml') {
+      combinedConfig = deepMerge(combinedConfig, yml.load(file));
+      count++;
+    } else if (ext === '.json') {
+      combinedConfig = deepMerge(combinedConfig, JSON.parse(file.toString()));
+      count++;
+    } else {
+      log.w(`Config file ${path} not supported type.`);
+    }
+  });
+
+  return { config: combinedConfig, count };
+}
